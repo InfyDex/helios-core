@@ -61,8 +61,9 @@ func main() {
 	app.Use(logger.New())
 	app.Use(appmw.RequestID())
 
-	app.Get("/health", handler.Health)
-	handler.NewAuth(app, authSvc)
+	core := app.Group(handler.CoreAPIPrefix)
+	core.Get("/health", handler.Health)
+	handler.NewAuth(core, authSvc)
 
 	go func() {
 		addr := ":" + cfg.Port

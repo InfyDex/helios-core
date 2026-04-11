@@ -53,8 +53,10 @@ On first start, Postgres runs `migrations/001_init.sql` automatically. The API l
 
 ## API
 
-- `GET /health` — liveness
-- `POST /auth/google` — body `{"idToken":"<Google credential>"}`; returns user JSON and a Helios JWT
+All routes are under **`/core/v1`**.
+
+- `GET /core/v1/health` — liveness
+- `POST /core/v1/auth/google` — body `{"idToken":"<Google credential>"}`; returns user JSON and a Helios JWT
 
 ## Regenerating database code (after SQL changes)
 

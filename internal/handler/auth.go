@@ -40,7 +40,7 @@ type userJSON struct {
 	Avatar string `json:"avatar"`
 }
 
-// Google handles POST /auth/google.
+// Google handles POST /core/v1/auth/google.
 func (h *Auth) Google(c *fiber.Ctx) error {
 	var req googleLoginRequest
 	if err := c.BodyParser(&req); err != nil {
