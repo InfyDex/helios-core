@@ -38,6 +38,7 @@ type userJSON struct {
 	Email  string `json:"email"`
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
+	Phone  string `json:"phone"`
 }
 
 // Google handles POST /core/v1/auth/google.
@@ -71,6 +72,7 @@ func (h *Auth) Google(c *fiber.Ctx) error {
 			Email:  res.Email,
 			Name:   res.Name,
 			Avatar: res.AvatarURL,
+			Phone:  res.Phone,
 		},
 		Token: res.Token,
 	})

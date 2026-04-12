@@ -18,19 +18,19 @@ var ErrInvalidGoogleToken = errors.New("invalid google token")
 
 // Service orchestrates Google token verification, user persistence, and JWT issuance.
 type Service struct {
-	googleClientID string
-	jwtSecret      string
-	jwtExpiry      time.Duration
-	users          *user.Store
+	googleClientIDs []string
+	jwtSecret       string
+	jwtExpiry       time.Duration
+	users           *user.Store
 }
 
-// NewService constructs an auth service.
-func NewService(googleClientID, jwtSecret string, jwtExpiry time.Duration, users *user.Store) *Service {
+// NewService constructs an auth service. googleClientIDs are OAuth client IDs whose aud the ID token may use (web, Android, iOS).
+func NewService(googleClientIDs []string, jwtSecret string, jwtExpiry time.Duration, users *user.Store) *Service {
 	return &Service{
-		googleClientID: googleClientID,
-		jwtSecret:      jwtSecret,
-		jwtExpiry:      jwtExpiry,
-		users:          users,
+		googleClientIDs: googleClientIDs,
+		jwtSecret:       jwtSecret,
+		jwtExpiry:       jwtExpiry,
+		users:           users,
 	}
 }
 
@@ -40,16 +40,17 @@ type LoginResult struct {
 	Email     string
 	Name      string
 	AvatarURL string
+	Phone     string
 	Token     string
 }
 
 // GoogleLogin verifies the Google ID token, upserts the user, and returns a Helios JWT.
 func (s *Service) GoogleLogin(ctx context.Context, idToken string) (*LoginResult, error) {
-	prof, err := gverify.VerifyIDToken(ctx, idToken, s.googleClientID)
+	prof, err := gverify.VerifyIDToken(ctx, idToken, s.googleClientIDs)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidGoogleToken, err)
 	}
-	u, err := s.users.GetOrCreateByGoogle(ctx, prof.Email, prof.Name, prof.Picture, prof.Sub)
+	u, err := s.users.GetOrCreateByGoogle(ctx, prof.Email, prof.Name, prof.Picture, prof.Phone, prof.Sub)
 	if err != nil {
 		return nil, err
 	}
@@ -65,11 +66,16 @@ func (s *Service) GoogleLogin(ctx context.Context, idToken string) (*LoginResult
 	if u.AvatarUrl.Valid {
 		avatar = u.AvatarUrl.String
 	}
+	phone := ""
+	if u.Phone.Valid {
+		phone = u.Phone.String
+	}
 	return &LoginResult{
 		UserID:    idStr,
 		Email:     u.Email,
 		Name:      u.Name,
 		AvatarURL: avatar,
+		Phone:     phone,
 		Token:     token,
 	}, nil
 }

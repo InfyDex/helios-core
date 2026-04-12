@@ -25,9 +25,21 @@ func NewStore(q *db.Queries) *Store {
 }
 
 // GetOrCreateByGoogle returns an existing user by google_id or creates one.
-func (s *Store) GetOrCreateByGoogle(ctx context.Context, email, name, picture, googleID string) (db.User, error) {
+func (s *Store) GetOrCreateByGoogle(ctx context.Context, email, name, picture, phone, googleID string) (db.User, error) {
 	u, err := s.q.GetUserByGoogleID(ctx, googleID)
 	if err == nil {
+		if phone != "" {
+			if err := s.q.UpdateUserPhoneByGoogleID(ctx, db.UpdateUserPhoneByGoogleIDParams{
+				GoogleID: googleID,
+				Phone:    pgtype.Text{String: phone, Valid: true},
+			}); err != nil {
+				return db.User{}, err
+			}
+			u, err = s.q.GetUserByGoogleID(ctx, googleID)
+			if err != nil {
+				return db.User{}, err
+			}
+		}
 		return u, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
@@ -37,10 +49,15 @@ func (s *Store) GetOrCreateByGoogle(ctx context.Context, email, name, picture, g
 	if picture != "" {
 		avatar = pgtype.Text{String: picture, Valid: true}
 	}
+	var phoneCol pgtype.Text
+	if phone != "" {
+		phoneCol = pgtype.Text{String: phone, Valid: true}
+	}
 	u, err = s.q.CreateUser(ctx, db.CreateUserParams{
 		Email:     email,
 		Name:      name,
 		AvatarUrl: avatar,
+		Phone:     phoneCol,
 		GoogleID:  googleID,
 	})
 	if err == nil {

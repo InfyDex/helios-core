@@ -40,7 +40,7 @@ func main() {
 
 	queries := db.New(pool)
 	userStore := user.NewStore(queries)
-	authSvc := auth.NewService(cfg.GoogleClientID, cfg.JWTSecret, cfg.JWTExpiry, userStore)
+	authSvc := auth.NewService(cfg.GoogleClientIDs, cfg.JWTSecret, cfg.JWTExpiry, userStore)
 
 	app := fiber.New(fiber.Config{
 		AppName:      "Helios Core",

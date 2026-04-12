@@ -12,15 +12,16 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, name, avatar_url, google_id)
-VALUES ($1, $2, $3, $4)
-RETURNING id, email, name, avatar_url, google_id, created_at, updated_at
+INSERT INTO users (email, name, avatar_url, phone, google_id)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, email, name, avatar_url, phone, google_id, created_at, updated_at
 `
 
 type CreateUserParams struct {
 	Email     string      `json:"email"`
 	Name      string      `json:"name"`
 	AvatarUrl pgtype.Text `json:"avatar_url"`
+	Phone     pgtype.Text `json:"phone"`
 	GoogleID  string      `json:"google_id"`
 }
 
@@ -29,6 +30,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Email,
 		arg.Name,
 		arg.AvatarUrl,
+		arg.Phone,
 		arg.GoogleID,
 	)
 	var i User
@@ -37,6 +39,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Email,
 		&i.Name,
 		&i.AvatarUrl,
+		&i.Phone,
 		&i.GoogleID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -45,7 +48,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUserByGoogleID = `-- name: GetUserByGoogleID :one
-SELECT id, email, name, avatar_url, google_id, created_at, updated_at
+SELECT id, email, name, avatar_url, phone, google_id, created_at, updated_at
 FROM users
 WHERE google_id = $1
 `
@@ -58,9 +61,28 @@ func (q *Queries) GetUserByGoogleID(ctx context.Context, googleID string) (User,
 		&i.Email,
 		&i.Name,
 		&i.AvatarUrl,
+		&i.Phone,
 		&i.GoogleID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updateUserPhoneByGoogleID = `-- name: UpdateUserPhoneByGoogleID :exec
+UPDATE users
+SET phone = $2,
+    updated_at = now()
+WHERE google_id = $1
+  AND $2::text <> ''
+`
+
+type UpdateUserPhoneByGoogleIDParams struct {
+	GoogleID string      `json:"google_id"`
+	Phone    pgtype.Text `json:"phone"`
+}
+
+func (q *Queries) UpdateUserPhoneByGoogleID(ctx context.Context, arg UpdateUserPhoneByGoogleIDParams) error {
+	_, err := q.db.Exec(ctx, updateUserPhoneByGoogleID, arg.GoogleID, arg.Phone)
+	return err
 }

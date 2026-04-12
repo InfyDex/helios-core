@@ -13,6 +13,7 @@ type User struct {
 	Email     string             `json:"email"`
 	Name      string             `json:"name"`
 	AvatarUrl pgtype.Text        `json:"avatar_url"`
+	Phone     pgtype.Text        `json:"phone"`
 	GoogleID  string             `json:"google_id"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`

@@ -1,0 +1,20 @@
+---
+description: Helios Core backend — use AGENTS.md and these conventions in this repo
+alwaysApply: true
+---
+
+# Helios Core (this workspace)
+
+Before making non-trivial changes, align with **`AGENTS.md`** at the repo root (architecture, API, env, folder map). Use **`README.md`** for Docker, Google Cloud setup, and runbooks.
+
+## Invariants
+
+- **API prefix:** all routes under `/core/v1` (`internal/handler/routes.go` → `CoreAPIPrefix`).
+- **DB access:** SQL in `sql/queries/` + schema in `migrations/`; run **`sqlc generate`** after SQL changes. **Do not hand-edit** `pkg/db/*.go`.
+- **Auth:** Google **ID token** only for MVP; `GOOGLE_CLIENT_ID` may be comma-separated OAuth client IDs; no Admin SDK for sign-in verification.
+- **Scope:** no microservices, Redis, or event bus in this repo unless explicitly requested.
+- **Clients:** the Helios **Flutter host** is a separate codebase; it calls this service for auth. Do not assume feature UIs live in this repo. If API or auth contract changes, note compatibility in `AGENTS.md` / `README.md`. Prompt for generating the Flutter host: **`HELIOS_FLUTTER_HOST_PROMPT.md`**.
+
+## Change style
+
+Match existing Go layout (`internal/` vs `pkg/`), imports, and error handling. Prefer small diffs; keep JWT and Google verification logic in `pkg/jwt` and `pkg/google`.

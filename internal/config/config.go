@@ -10,11 +10,11 @@ import (
 
 // Config holds runtime settings from the environment.
 type Config struct {
-	Port           string
-	DatabaseURL    string
-	JWTSecret      string
-	JWTExpiry      time.Duration
-	GoogleClientID string
+	Port             string
+	DatabaseURL      string
+	JWTSecret        string
+	JWTExpiry        time.Duration
+	GoogleClientIDs  []string // OAuth client IDs (web, Android, iOS); token aud must match one
 }
 
 // Load reads required environment variables and returns Config or an error.
@@ -35,17 +35,44 @@ func Load() (Config, error) {
 	if err != nil || expSec < 60 {
 		return Config{}, fmt.Errorf("JWT_EXPIRY must be an integer >= 60 (seconds)")
 	}
-	googleClient := strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID"))
-	if googleClient == "" {
-		return Config{}, fmt.Errorf("GOOGLE_CLIENT_ID is required")
+	clientIDs, err := parseGoogleClientIDs(os.Getenv("GOOGLE_CLIENT_ID"))
+	if err != nil {
+		return Config{}, err
 	}
 	return Config{
-		Port:           port,
-		DatabaseURL:    dbURL,
-		JWTSecret:      secret,
-		JWTExpiry:      time.Duration(expSec) * time.Second,
-		GoogleClientID: googleClient,
+		Port:            port,
+		DatabaseURL:     dbURL,
+		JWTSecret:       secret,
+		JWTExpiry:       time.Duration(expSec) * time.Second,
+		GoogleClientIDs: clientIDs,
 	}, nil
+}
+
+// parseGoogleClientIDs splits GOOGLE_CLIENT_ID on commas (and trims whitespace).
+// One ID is enough for web-only; list all platform client IDs for Android + iOS + web.
+func parseGoogleClientIDs(raw string) ([]string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, fmt.Errorf("GOOGLE_CLIENT_ID is required (one or more OAuth client IDs, comma-separated)")
+	}
+	parts := strings.Split(raw, ",")
+	seen := make(map[string]struct{})
+	var out []string
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if _, ok := seen[p]; ok {
+			continue
+		}
+		seen[p] = struct{}{}
+		out = append(out, p)
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("GOOGLE_CLIENT_ID must contain at least one non-empty client ID")
+	}
+	return out, nil
 }
 
 func envOrDefault(key, def string) string {
