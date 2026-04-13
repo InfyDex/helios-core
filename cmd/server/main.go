@@ -1,3 +1,4 @@
+// Package main starts the Helios Core HTTP server.
 package main
 
 import (
@@ -32,11 +33,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("db connect: %v", err)
 	}
-	defer pool.Close()
-
 	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
 		log.Fatalf("db ping: %v", err)
 	}
+	defer pool.Close()
 
 	queries := db.New(pool)
 	userStore := user.NewStore(queries)

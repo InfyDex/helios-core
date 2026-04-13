@@ -4,13 +4,31 @@ Central identity service for the Helios platform: Google Sign-In, PostgreSQL use
 
 **Machine / agent context:** see [`AGENTS.md`](./AGENTS.md) for a concise project map, API list, env vars, and where to change code—useful for new chats or Cursor rules.
 
-**Flutter host app (separate repo):** use [`HELIOS_FLUTTER_HOST_PROMPT.md`](./HELIOS_FLUTTER_HOST_PROMPT.md) as a copy-paste prompt to scaffold the Helios modular client (Google login, plugins, `AGENTS.md` + Cursor rule for Flutter).
+**Separate repos (prompts in this folder):**
+
+| Prompt file | Use in |
+|--------------|--------|
+| [`HELIOS_FLUTTER_HOST_PROMPT.md`](./HELIOS_FLUTTER_HOST_PROMPT.md) | New Flutter **host** app (Google login, plugins shell) |
+| [`HELIOS_TODO_SERVICE_PROMPT.md`](./HELIOS_TODO_SERVICE_PROMPT.md) | New **todo** Go microservice |
+| [`HELIOS_FLUTTER_TODO_PLUGIN_PROMPT.md`](./HELIOS_FLUTTER_TODO_PLUGIN_PROMPT.md) | Existing Flutter monorepo — **todo plugin + API client** |
+
+How services talk to each other is summarized in [`AGENTS.md`](./AGENTS.md) → **Inter-service communication**.
 
 ## Prerequisites
 
 - Go 1.22+
 - PostgreSQL 16+ (or Docker)
 - [sqlc](https://docs.sqlc.dev/en/stable/overview/install.html) — only if you change SQL under `sql/queries/` or `migrations/`
+
+## Development (tests + lint)
+
+```powershell
+go test ./...
+go vet ./...
+go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6 run ./...
+```
+
+Lint config lives in **`.golangci.yml`** (sqlc output under `pkg/db/` is excluded). Install a pinned binary locally if you prefer: see [golangci-lint install](https://golangci-lint.run/welcome/install/).
 
 ## Configuration
 
@@ -73,7 +91,9 @@ $env:GOOGLE_CLIENT_ID = "web-id.apps.googleusercontent.com,android-id.apps.googl
 docker compose up --build
 ```
 
-Alternatively, put `GOOGLE_CLIENT_ID=...` in a `.env` file beside `docker-compose.yml`; Compose substitutes it into the service environment. Use **straight double quotes** in `.env` if your tooling requires wrapping values that contain commas.
+Alternatively, put `GOOGLE_CLIENT_ID=...` in a **`.env`** file beside `docker-compose.yml`; Compose substitutes it into the service environment. The **`.env` file is gitignored**—do not commit it.
+
+**Local overrides file (optional):** copy [`docker-compose.override.example.yml`](./docker-compose.override.example.yml) to **`docker-compose.override.yml`** and put secrets or machine-only settings there. That override file is **gitignored**; Docker Compose merges it automatically with `docker-compose.yml` (no extra `-f` flag). Commit only the **`.example`** file.
 
 On first start, Postgres runs `migrations/001_init.sql` automatically. The API listens on [http://localhost:8080](http://localhost:8080).
 

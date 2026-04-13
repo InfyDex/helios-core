@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"unicode/utf8"
@@ -12,13 +13,18 @@ import (
 
 const maxIDTokenRunes = 16384
 
+// GoogleLoginService verifies Google credentials and issues Helios session tokens.
+type GoogleLoginService interface {
+	GoogleLogin(ctx context.Context, idToken string) (*auth.LoginResult, error)
+}
+
 // Auth exposes HTTP handlers for authentication.
 type Auth struct {
-	svc *auth.Service
+	svc GoogleLoginService
 }
 
 // NewAuth registers routes on the given Fiber app.
-func NewAuth(app fiber.Router, svc *auth.Service) *Auth {
+func NewAuth(app fiber.Router, svc GoogleLoginService) *Auth {
 	h := &Auth{svc: svc}
 	app.Post("/auth/google", h.Google)
 	return h

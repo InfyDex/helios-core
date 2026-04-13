@@ -1,3 +1,4 @@
+// Package auth orchestrates Google login and Helios JWT issuance.
 package auth
 
 import (

@@ -6,7 +6,17 @@ Use this file (and `README.md` for runbooks) when onboarding a new chat or autom
 
 **Helios Core** is a self-hosted **Go** backend: central **identity** for the Helios platform. It verifies **Google Sign-In ID tokens**, stores users in **PostgreSQL**, and issues **Helios JWTs** for other services. It does **not** implement Admin SDK, microservices, Redis, or event buses.
 
-**Companion client:** the **Helios Flutter host app** (separate repository) is the modular shell: it performs Google Sign-In, exchanges the ID token with this API (`POST /core/v1/auth/google`), stores the Helios JWT, and exposes auth to **feature plugins** (todo, movies, etc.) via a small contract package—plugins do not re-implement Google login. See **`HELIOS_FLUTTER_HOST_PROMPT.md`** in this repo for a copy-paste prompt to generate that Flutter project.
+**Companion client:** the **Helios Flutter host app** (separate repository) is the modular shell: it performs Google Sign-In, exchanges the ID token with this API (`POST /core/v1/auth/google`), stores the Helios JWT, and exposes auth to **feature plugins** (todo, movies, etc.) via a small contract package—plugins do not re-implement Google login. See **`HELIOS_FLUTTER_HOST_PROMPT.md`** for a scaffold prompt.
+
+**Feature backends (e.g. todo):** separate services/repos. Copy-paste prompts: **`HELIOS_TODO_SERVICE_PROMPT.md`** (Go API), **`HELIOS_FLUTTER_TODO_PLUGIN_PROMPT.md`** (Flutter plugin wiring).
+
+## Inter-service communication (Core ↔ todo ↔ client)
+
+1. **Login (once):** the client talks only to **Helios Core** → `POST /core/v1/auth/google` → receives **Helios JWT** (HS256; claims include `user_id`, `email`, `sub` = user id; standard `exp` / `iat`).
+2. **Authenticated API calls:** the client sends **`Authorization: Bearer <Helios JWT>`** to **each feature service** (e.g. todo). The todo service **does not** call Core on every request for MVP; it **verifies the JWT locally** using the **same `JWT_SECRET`** as Helios Core and reads **`user_id` / `sub`** to scope data. Google ID tokens are **not** sent to feature services for normal CRUD.
+3. **Trust boundary:** any service that holds `JWT_SECRET` can mint or validate user tokens—treat all such services as **highly trusted**; rotate the secret **together** across Core + consumers. **Future options** (not in Core today): asymmetric signing (RS256) + JWKS from Core, short-lived tokens + refresh, or **token introspection** (`POST /core/v1/introspect`) if you want a network check per request.
+4. **Service-to-service (backend only):** if one microservice calls another **without** an end-user JWT, use **mTLS**, **internal API keys**, or **workload identity**—separate from the user Bearer flow above.
+5. **Browser / Flutter web:** if the todo API is on another origin than the web app, configure **CORS** on the todo service for allowed origins and headers (`Authorization`, `Content-Type`).
 
 - **Module:** `github.com/infydex/helios-core`
 - **HTTP:** [Fiber](https://github.com/gofiber/fiber) v2
@@ -80,12 +90,18 @@ README.md                # human-oriented setup, Google Console, API notes
 - New authenticated routes: reuse `handler.CoreAPIPrefix` or a nested `Group`; keep versioning under `/core/v1` unless the product decision is to version elsewhere.
 - **Future-friendly** (not implemented yet): Apple/email login, refresh tokens, roles, service-to-service auth — keep new code modular (e.g. auth provider interface) rather than hard-coding only Google where a second provider will plug in.
 
-## Quick verification
+## Tests and static analysis
 
 ```bash
-go build -o bin/helios-core ./cmd/server
+go test ./...
 go vet ./...
+# Lint (config: .golangci.yml; generated sqlc code under pkg/db is excluded)
+go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6 run ./...
 ```
+
+Add or extend **`*_test.go`** when behavior changes (`internal/config`, `pkg/jwt`, `pkg/google`, `internal/handler`, `internal/middleware`, etc.). After edits, **run `go test ./...` and golangci-lint** before considering work done.
+
+Quick compile: `go build -o bin/helios-core ./cmd/server`
 
 Full Docker / Google Cloud steps: **`README.md`**.
 

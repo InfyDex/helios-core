@@ -13,8 +13,14 @@ Before making non-trivial changes, align with **`AGENTS.md`** at the repo root (
 - **DB access:** SQL in `sql/queries/` + schema in `migrations/`; run **`sqlc generate`** after SQL changes. **Do not hand-edit** `pkg/db/*.go`.
 - **Auth:** Google **ID token** only for MVP; `GOOGLE_CLIENT_ID` may be comma-separated OAuth client IDs; no Admin SDK for sign-in verification.
 - **Scope:** no microservices, Redis, or event bus in this repo unless explicitly requested.
-- **Clients:** the Helios **Flutter host** is a separate codebase; it calls this service for auth. Do not assume feature UIs live in this repo. If API or auth contract changes, note compatibility in `AGENTS.md` / `README.md`. Prompt for generating the Flutter host: **`HELIOS_FLUTTER_HOST_PROMPT.md`**.
+- **Clients:** the Helios **Flutter host** is a separate codebase; it calls this service for auth. **Feature APIs** (todo, etc.) are other repos; they validate the **same Helios JWT** with the **same `JWT_SECRET`** (see `AGENTS.md` → Inter-service communication). If JWT shape or paths change, document in `AGENTS.md` / `README.md`. Prompts: **`HELIOS_FLUTTER_HOST_PROMPT.md`**, **`HELIOS_TODO_SERVICE_PROMPT.md`**, **`HELIOS_FLUTTER_TODO_PLUGIN_PROMPT.md`**.
 
 ## Change style
 
 Match existing Go layout (`internal/` vs `pkg/`), imports, and error handling. Prefer small diffs; keep JWT and Google verification logic in `pkg/jwt` and `pkg/google`.
+
+## Tests and lint (required for changes)
+
+- Add or update **`*_test.go`** whenever behavior warrants it (same package for unexported helpers; use **interfaces/mocks** for HTTP and external deps).
+- After **any** meaningful code change, run **`go test ./...`** and fix failures before finishing.
+- Run **`golangci-lint`** per **`AGENTS.md`** (or `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6 run ./...`) and address new findings when practical.

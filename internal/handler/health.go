@@ -1,3 +1,4 @@
+// Package handler implements Helios Core HTTP routes.
 package handler
 
 import "github.com/gofiber/fiber/v2"

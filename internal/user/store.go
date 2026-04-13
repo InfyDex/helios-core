@@ -1,3 +1,4 @@
+// Package user persists Helios users keyed by Google identity.
 package user
 
 import (

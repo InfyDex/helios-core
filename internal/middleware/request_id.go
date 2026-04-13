@@ -1,3 +1,4 @@
+// Package middleware provides HTTP middleware for Helios Core.
 package middleware
 
 import (
@@ -11,8 +12,10 @@ func RequestID() fiber.Handler {
 		rid := c.Get("X-Request-ID")
 		if rid == "" {
 			rid = uuid.NewString()
-			c.Set("X-Request-ID", rid)
+			// So downstream c.Get("X-Request-ID") sees the id; c.Set only affects the response.
+			c.Request().Header.Set("X-Request-ID", rid)
 		}
+		c.Set("X-Request-ID", rid)
 		return c.Next()
 	}
 }

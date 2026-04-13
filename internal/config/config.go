@@ -1,3 +1,4 @@
+// Package config loads process environment for Helios Core.
 package config
 
 import (
@@ -10,11 +11,11 @@ import (
 
 // Config holds runtime settings from the environment.
 type Config struct {
-	Port             string
-	DatabaseURL      string
-	JWTSecret        string
-	JWTExpiry        time.Duration
-	GoogleClientIDs  []string // OAuth client IDs (web, Android, iOS); token aud must match one
+	Port            string
+	DatabaseURL     string
+	JWTSecret       string
+	JWTExpiry       time.Duration
+	GoogleClientIDs []string // OAuth client IDs (web, Android, iOS); token aud must match one
 }
 
 // Load reads required environment variables and returns Config or an error.

@@ -1,3 +1,4 @@
+// Package google verifies Google ID tokens for Helios login.
 package google
 
 import (
